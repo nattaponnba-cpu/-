@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ห้องทดลองธาตุ 3D | ตารางธาตุและแบบจำลองอะตอม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700&family=Noto+Sans+Thai:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#27325f;--muted:#6f7ba3;--line:#dbe8ff;--soft:#f3f8ff;--mint:#2ec4b6;--sky:#5aa9ff;--pink:#ff8fab;--sun:#ffd166;--lav:#b79cff;--ok:#1faa7a;--bad:#f2761f;--cat:#16b9a3;--shadow:#cfe0ff}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:"Noto Sans Thai",Tahoma,sans-serif;color:var(--ink);background:radial-gradient(700px 420px at 0% 0%,#fff0f5 0%,transparent 60%),radial-gradient(700px 420px at 100% 100%,#e8fbf7 0%,transparent 60%),#fff;line-height:1.6;overflow:hidden}
+h1,h2,h3,.sym,output{font-family:"Mali","Noto Sans Thai",sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(360px,.9fr);gap:16px;height:100%;padding:16px}
+.glass{background:#fffffff0;border:2.5px solid var(--line);box-shadow:0 5px 0 var(--shadow);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.stage{position:relative;border-radius:32px;overflow:hidden;border:3px solid var(--line);background:radial-gradient(circle at 50% 45%,#fff 0%,#f1f8ff 75%),#fff;box-shadow:0 8px 0 var(--shadow);min-height:0}
+.stage:before{content:"";position:absolute;inset:0;background-image:radial-gradient(#cfe0ff 1.3px,transparent 1.4px);background-size:24px 24px;opacity:.75;pointer-events:none}
+.decor{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.decor svg{position:absolute}
+.d1{left:20px;bottom:118px;width:76px;animation:bob 4s ease-in-out infinite}
+.d2{right:22px;top:86px;width:68px;animation:bob 5s ease-in-out infinite .6s}
+.d3{right:22px;bottom:70px;width:100px;animation:bob 6s ease-in-out infinite 1s}
+.sp{width:22px;animation:tw 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-10px) rotate(2deg)}}
+@keyframes tw{50%{transform:scale(.55) rotate(25deg);opacity:.5}}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none;z-index:1}
+#gl:active{cursor:grabbing}
+.brand{position:absolute;top:16px;left:16px;padding:10px 20px 10px 12px;border-radius:99px;z-index:5;pointer-events:none;display:flex;gap:12px;align-items:center}
+.logo{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#c9f7ef,#d9e9ff);display:grid;place-items:center;font-size:1.5rem;border:2px solid var(--line)}
+.brand h1{font-size:1.15rem;font-weight:700;line-height:1.3}
+.brand p{font-size:.76rem;color:var(--muted)}
+.tools{position:absolute;top:16px;right:16px;display:flex;gap:8px;z-index:5}
+.tools button{padding:9px 16px;border-radius:99px;font-size:.82rem;font-weight:500;transition:.2s}
+.tools button:hover{transform:translateY(-2px)}
+.tools button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--shadow)}
+.tools button.on{background:#d9f7f1;border-color:var(--mint)}
+.badge{position:absolute;left:16px;bottom:16px;z-index:5;padding:12px 22px 12px 18px;border-radius:26px;display:flex;gap:16px;align-items:center;pointer-events:none}
+.badge .sym{font-size:2.6rem;font-weight:700;line-height:1;color:var(--cat);text-shadow:3px 3px 0 var(--line)}
+.badge small{display:block;color:var(--muted);font-size:.74rem}
+.badge b{font-weight:700;font-size:.98rem}
+.legend3d{position:absolute;right:16px;bottom:16px;z-index:5;display:flex;gap:12px;padding:9px 16px;border-radius:99px;font-size:.76rem;color:var(--muted);pointer-events:none}
+.legend3d i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+#hs{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+.hs{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:8px;white-space:nowrap;will-change:transform}
+.hs .pin{position:relative;width:28px;height:28px;border-radius:50%;background:var(--cat);border:3px solid #fff;box-shadow:0 3px 0 #27325f33,0 6px 14px #27325f33;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#fff;transition:.2s}
+.hs .pin:before{content:"";position:absolute;inset:-8px;border-radius:50%;border:2.5px solid var(--cat);animation:pulse 2s ease-out infinite}
+.hs:hover .pin,.hs.open .pin{transform:scale(1.2)}
+.hs .tag{padding:4px 12px;border-radius:99px;font-size:.76rem;font-weight:500;background:#fff;border:2px solid var(--line);box-shadow:0 3px 0 var(--shadow);opacity:0;transform:translateX(-6px);transition:.25s}
+.hs:hover .tag,.hs.open .tag{opacity:1;transform:none}
+@keyframes pulse{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+#hcard{position:absolute;left:50%;bottom:108px;width:min(440px,calc(100% - 32px));transform:translate(-50%,20px) scale(.94);opacity:0;pointer-events:none;z-index:6;padding:18px 22px;border-radius:26px;transition:.35s cubic-bezier(.2,.9,.3,1.3);border:3px solid var(--cat);box-shadow:0 6px 0 var(--cat)}
+#hcard.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+#hcard h3{font-size:1.05rem;margin-bottom:4px;color:var(--cat)}
+#hcard p{font-size:.9rem;color:var(--ink)}
+#hcard .x{position:absolute;top:8px;right:14px;font-size:1.4rem;color:var(--muted)}
+.panel{display:flex;flex-direction:column;min-height:0;border-radius:32px;overflow:hidden;background:#fff;border:3px solid var(--line);box-shadow:0 8px 0 var(--shadow)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:12px;background:var(--soft);border-bottom:2.5px dashed var(--line)}
+.tabs button{padding:9px 4px;border-radius:99px;font-size:.84rem;font-weight:500;color:var(--muted);transition:.2s}
+.tabs button:hover{background:#fff}
+.tabs button.on{color:#fff;background:var(--sky);box-shadow:0 4px 0 #3b82d6;font-weight:700}
+.pages{flex:1;overflow:auto;padding:18px;min-height:0;scrollbar-width:thin;scrollbar-color:#cfe0ff transparent}
+.page{display:none;animation:rise .45s cubic-bezier(.2,.8,.2,1)}
+.page.on{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+h2{font-size:1.15rem;font-weight:700;margin-bottom:4px}
+.lead{font-size:.88rem;color:var(--muted);margin-bottom:12px}
+.row{display:flex;gap:10px;margin:10px 0;align-items:center;flex-wrap:wrap}
+input[type=text],select{flex:1;min-width:130px;font:inherit;font-size:.92rem;color:var(--ink);background:#fff;border:2.5px solid var(--line);border-radius:99px;padding:9px 16px}
+select{border-radius:16px}
+.btn{padding:10px 20px;border-radius:99px;font-weight:700;font-size:.88rem;background:var(--mint);color:#fff;box-shadow:0 4px 0 #1b9a8e;transition:.15s}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #1b9a8e}
+.btn.ghost{background:#fff;color:var(--ink);border:2.5px solid var(--line);box-shadow:0 4px 0 var(--shadow);font-weight:500}
+.btn.ghost:active{box-shadow:0 1px 0 var(--shadow)}
+.msg{font-size:.82rem;color:var(--muted);min-height:1.3em}
+.tile{display:flex;gap:16px;align-items:center;padding:16px 18px;border-radius:26px;margin:12px 0;background:linear-gradient(135deg,#fff,var(--soft));border:2.5px dashed var(--cat);position:relative;overflow:hidden}
+.tile:before{content:"";position:absolute;width:150px;height:150px;right:-30px;top:-50px;border-radius:50%;background:var(--cat);opacity:.14}
+.tile .no{font-size:.78rem;color:var(--muted)}
+.tile .sym{font-size:3.4rem;font-weight:700;line-height:1.1;color:var(--cat);text-shadow:3px 3px 0 var(--line)}
+.tile .nm{font-weight:700;font-size:1.1rem}
+.tile .en{font-size:.82rem;color:var(--muted)}
+.pop{animation:pop .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes pop{0%{transform:scale(.88);opacity:.4}100%{transform:none;opacity:1}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{padding:5px 13px;border-radius:99px;font-size:.8rem;background:#e7f3ff}
+.chip:nth-child(2){background:#e6faf6}.chip:nth-child(3){background:#fff0f4}.chip:nth-child(4){background:#fff6dc}.chip:nth-child(5){background:#f1ebff}
+.chip b{font-weight:700}
+.use{font-size:.88rem;padding:12px 16px;border-radius:18px;background:#fff8e1;border-left:5px solid var(--sun);margin:10px 0}
+.sl{display:grid;grid-template-columns:1fr 46px;gap:12px;align-items:center;margin:8px 0}
+input[type=range]{width:100%;accent-color:var(--pink);height:6px}
+output{font-weight:700;font-size:1.3rem;text-align:center;color:var(--pink)}
+.riddle{padding:12px 16px;border-radius:18px;background:#f1ebff;border:2px dashed var(--lav);font-size:.88rem;margin:10px 0}
+.pt{display:grid;grid-template-columns:repeat(18,minmax(0,1fr));gap:4px;margin:12px 0}
+.pc{aspect-ratio:1/1.1;border-radius:9px;border:2px solid var(--line);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.5rem;line-height:1.15;transition:.2s;position:relative;color:var(--ink)}
+.pc b{font-family:"Mali";font-size:.82rem}
+.pc span{opacity:.65}
+.pc:hover{transform:translateY(-3px) scale(1.14);z-index:2;box-shadow:0 6px 0 var(--shadow)}
+.pc.sel{box-shadow:0 0 0 3px var(--cc);transform:scale(1.12);z-index:2}
+.pc.metal{background:#e3efff}.pc.nonmetal{background:#dcf8f2}.pc.noble{background:#fff1cf}.pc.metalloid{background:#ffe3f1}
+.lg{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted)}
+.lg i{display:inline-block;width:11px;height:11px;border-radius:4px;margin-right:5px}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.88rem}
+th,td{padding:9px 8px;text-align:left;border-bottom:2px dashed var(--line)}
+thead th{color:var(--sky);font-family:"Mali";font-weight:700}
+tbody th{color:var(--muted);font-weight:400}
+.note{padding:12px 16px;border-radius:18px;background:var(--soft);font-size:.88rem;border:2px dashed var(--line)}
+.q{padding:14px 0;border-top:2px dashed var(--line)}
+.q:first-of-type{border-top:0}
+.q strong{font-weight:700;font-size:.94rem}
+.opts{display:grid;gap:9px;margin-top:10px}
+.opt{padding:10px 16px;border-radius:16px;text-align:left;background:#fff;border:2.5px solid var(--line);box-shadow:0 3px 0 var(--shadow);font-size:.88rem;transition:.2s}
+.opt:hover:not(:disabled){transform:translateX(4px);border-color:var(--sky)}
+.opt.ok{background:#e1f8ee;border-color:var(--ok)}
+.opt.no{background:#ffeede;border-color:var(--bad)}
+.fb{font-size:.82rem;margin-top:8px;color:var(--muted);min-height:1em}
+.score{margin-top:14px;padding:14px;border-radius:20px;text-align:center;background:#fff7e0;border:2.5px dashed var(--sun);font-weight:700}
+.bar{height:10px;border-radius:99px;background:#eaf1ff;overflow:hidden;margin:6px 0 4px}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--mint),var(--sky));border-radius:99px;transition:width .5s}
+@media(max-width:980px){
+body{overflow:auto}
+.app{grid-template-columns:1fr;height:auto}
+.stage{height:62vh;min-height:420px}
+.panel{min-height:560px}
+.legend3d,.brand p{display:none}
+#hcard{bottom:96px}
+}
+@media(max-width:520px){.tools button{padding:8px 11px;font-size:.74rem}.badge .sym{font-size:2rem}.pc{font-size:.42rem}.pc b{font-size:.7rem}.d2,.d3{display:none}.brand h1{font-size:1rem}}
+</style>
+</head>
+<body>
+<div class="app">
+<section class="stage" id="stage">
+<div class="decor" aria-hidden="true">
+<svg class="d1" viewBox="0 0 80 100"><defs><clipPath id="fc"><path d="M31 8h18v28l22 46c3 7-1 14-9 14H18c-8 0-12-7-9-14l22-46z"/></clipPath></defs><path d="M31 8h18v28l22 46c3 7-1 14-9 14H18c-8 0-12-7-9-14l22-46z" fill="#fff"/><g clip-path="url(#fc)"><rect x="0" y="60" width="80" height="44" fill="#8ff0dc"/><circle cx="24" cy="70" r="4" fill="#fff" opacity=".8"/><circle cx="55" cy="66" r="3" fill="#fff" opacity=".8"/></g><path d="M31 8h18v28l22 46c3 7-1 14-9 14H18c-8 0-12-7-9-14l22-46z" fill="none" stroke="#27325f" stroke-width="3.5" stroke-linejoin="round"/><rect x="26" y="4" width="28" height="7" rx="3.5" fill="#ffd166" stroke="#27325f" stroke-width="3"/><circle cx="32" cy="76" r="3" fill="#27325f"/><circle cx="48" cy="76" r="3" fill="#27325f"/><path d="M34 84q6 6 12 0" fill="none" stroke="#27325f" stroke-width="3" stroke-linecap="round"/><circle cx="26" cy="82" r="3" fill="#ff8fab" opacity=".7"/><circle cx="54" cy="82" r="3" fill="#ff8fab" opacity=".7"/></svg>
+<svg class="d2" viewBox="0 0 80 90"><defs><clipPath id="bc"><path d="M14 10h52l-4 66c0 6-4 10-10 10H28c-6 0-10-4-10-10z"/></clipPath></defs><path d="M14 10h52l-4 66c0 6-4 10-10 10H28c-6 0-10-4-10-10z" fill="#fff"/><g clip-path="url(#bc)"><rect x="0" y="42" width="80" height="50" fill="#ffc2d4"/><circle cx="30" cy="52" r="3.5" fill="#fff" opacity=".85"/><circle cx="50" cy="48" r="2.5" fill="#fff" opacity=".85"/></g><path d="M14 10h52l-4 66c0 6-4 10-10 10H28c-6 0-10-4-10-10z" fill="none" stroke="#27325f" stroke-width="3.5" stroke-linejoin="round"/><path d="M10 10h60" stroke="#27325f" stroke-width="3.5" stroke-linecap="round"/><path d="M22 24h8M22 34h6M22 44h8" stroke="#27325f" stroke-width="2.5" stroke-linecap="round"/><circle cx="34" cy="64" r="2.8" fill="#27325f"/><circle cx="48" cy="64" r="2.8" fill="#27325f"/><path d="M36 71q5 5 10 0" fill="none" stroke="#27325f" stroke-width="2.8" stroke-linecap="round"/></svg>
+<svg class="d3" viewBox="0 0 110 96"><g stroke="#27325f" stroke-width="3.2" stroke-linejoin="round"><path d="M8 8v54a10 10 0 0 0 20 0V8z" fill="#fff"/><path d="M8 40v22a10 10 0 0 0 20 0V40z" fill="#bfe3ff"/><path d="M45 20v50a10 10 0 0 0 20 0V20z" fill="#fff"/><path d="M45 44v26a10 10 0 0 0 20 0V44z" fill="#ffe08a"/><path d="M82 12v56a10 10 0 0 0 20 0V12z" fill="#fff"/><path d="M82 36v32a10 10 0 0 0 20 0V36z" fill="#d7c6ff"/></g><path d="M4 8h28M41 20h28M78 12h28" stroke="#27325f" stroke-width="3.2" stroke-linecap="round"/><circle cx="14" cy="56" r="2" fill="#27325f"/><circle cx="22" cy="56" r="2" fill="#27325f"/><path d="M15 62q3 3 6 0" fill="none" stroke="#27325f" stroke-width="2" stroke-linecap="round"/></svg>
+<svg class="sp" style="left:9%;top:26%" viewBox="0 0 24 24"><path d="M12 1l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#ffd166" stroke="#27325f" stroke-width="1.5" stroke-linejoin="round"/></svg>
+<svg class="sp" style="right:20%;top:22%;animation-delay:.8s" viewBox="0 0 24 24"><path d="M12 1l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#ff8fab" stroke="#27325f" stroke-width="1.5" stroke-linejoin="round"/></svg>
+<svg class="sp" style="left:14%;bottom:38%;width:16px;animation-delay:1.4s" viewBox="0 0 24 24"><path d="M12 1l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#8ff0dc" stroke="#27325f" stroke-width="1.5" stroke-linejoin="round"/></svg>
+<svg class="sp" style="right:8%;bottom:42%;width:18px;animation-delay:2s" viewBox="0 0 24 24"><path d="M12 1l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#b79cff" stroke="#27325f" stroke-width="1.5" stroke-linejoin="round"/></svg>
+</div>
+<canvas id="gl" aria-label="แบบจำลองอะตอม 3 มิติ ลากเพื่อหมุน เลื่อนล้อเมาส์เพื่อซูม"></canvas>
+<div class="brand glass"><div class="logo">🧪</div><div><h1>ห้องทดลองธาตุ 3D</h1><p>ลากหมุน · คลิกขวาลากเพื่อแพน · ล้อเมาส์เพื่อซูม</p></div></div>
+<div class="tools">
+<button class="glass on" id="autoBtn" type="button">หมุนอัตโนมัติ</button>
+<button class="glass" id="resetBtn" type="button">รีเซ็ตมุมกล้อง</button>
+</div>
+<div id="hs"></div>
+<div id="hcard" class="glass" role="dialog" aria-live="polite"><button class="x" id="hx" type="button" aria-label="ปิด">×</button><h3 id="hct"></h3><p id="hcp"></p></div>
+<div class="badge glass"><div class="sym" id="bSym">H</div><div><small>ธาตุที่กำลังแสดง</small><b id="bName">ไฮโดรเจน</b><small id="bSub">โปรตอน 1 · นิวตรอน 0 · อิเล็กตรอน 1</small></div></div>
+<div class="legend3d glass"><span><i style="background:#ff6b81"></i>โปรตอน</span><span><i style="background:#a9b8d6"></i>นิวตรอน</span><span><i style="background:#3aa8ff"></i>อิเล็กตรอน</span></div>
+</section>
+<aside class="panel glass">
+<nav class="tabs" role="tablist">
+<button class="on" data-tab="p1" type="button" role="tab">🔬 สำรวจ</button>
+<button data-tab="p2" type="button" role="tab">🧩 ตารางธาตุ</button>
+<button data-tab="p3" type="button" role="tab">⚖️ เปรียบเทียบ</button>
+<button data-tab="p4" type="button" role="tab">📝 ทดสอบ</button>
+</nav>
+<div class="pages">
+<div class="page on" id="p1">
+<h2>นักสืบธาตุ</h2>
+<p class="lead">พิมพ์ชื่อไทย ชื่ออังกฤษ หรือสัญลักษณ์ เช่น “ออกซิเจน”, “Oxygen” หรือ “O”</p>
+<div class="row"><input id="q" type="text" placeholder="ลองพิมพ์ Oxygen หรือ O" aria-label="ค้นหาธาตุ"><button class="btn" id="go" type="button">ค้นหา</button></div>
+<div class="msg" id="sm" role="status">มีธาตุให้สำรวจ 20 ธาตุ</div>
+<div class="tile pop" id="tile"><div><div class="no" id="tNo">เลขอะตอม 1</div><div class="sym" id="tSym">H</div></div><div><div class="nm" id="tNm">ไฮโดรเจน</div><div class="en" id="tEn">Hydrogen</div></div></div>
+<div class="chips" id="chips"></div>
+<div class="use" id="use"></div>
+<h2 style="margin-top:18px">ปรับจำนวนโปรตอน</h2>
+<p class="lead">เลื่อนเพื่อเปลี่ยนเลขอะตอม แล้วดูนิวเคลียสและชั้นพลังงานเปลี่ยนในฉาก 3 มิติทันที</p>
+<div class="sl"><input id="sl" type="range" min="1" max="20" value="1" aria-label="จำนวนโปรตอน"><output id="slo">1</output></div>
+<div class="row"><button class="btn ghost" id="prev" type="button">− โปรตอน</button><button class="btn ghost" id="next" type="button">+ โปรตอน</button></div>
+<h2 style="margin-top:18px">โหมดธาตุปริศนา</h2>
+<p class="lead">ซ่อนชื่อธาตุไว้ ให้ทายจากโมเดล 3 มิติและคำใบ้ แล้วกดเปิดเฉลย</p>
+<div class="row"><button class="btn ghost" id="rid" type="button">เปิดโหมดปริศนา</button><button class="btn" id="rev" type="button" hidden>เปิดเฉลย</button></div>
+<div class="riddle" id="rtxt" hidden></div>
+</div>
+<div class="page" id="p2">
+<h2>ตารางธาตุแบบโต้ตอบ</h2>
+<p class="lead">คลิกช่องธาตุเพื่อสร้างแบบจำลองอะตอม 3 มิติของธาตุนั้น</p>
+<div class="lg"><span><i style="background:#4f8cff"></i>โลหะ</span><span><i style="background:#16b9a3"></i>อโลหะ</span><span><i style="background:#e861b0"></i>กึ่งโลหะ</span><span><i style="background:#f5a524"></i>แก๊สมีตระกูล</span></div>
+<div class="pt" id="pt"></div>
+<div class="note" id="ptd">เลือกช่องธาตุเพื่อดูรายละเอียด</div>
+</div>
+<div class="page" id="p3">
+<h2>เปรียบเทียบธาตุ</h2>
+<p class="lead">เลือกธาตุสองชนิดเพื่อเปรียบเทียบสมบัติและโครงสร้างอะตอม</p>
+<div class="row"><select id="ca" aria-label="ธาตุ A"></select><select id="cb" aria-label="ธาตุ B"></select></div>
+<table><thead><tr><th>สมบัติ</th><th id="ha">A</th><th id="hb">B</th></tr></thead><tbody id="cr"></tbody></table>
+<div class="note" id="cc">เลือกธาตุเพื่อเริ่มเปรียบเทียบ</div>
+<div class="row"><button class="btn ghost" id="sa" type="button">ดู A ใน 3D</button><button class="btn ghost" id="sb" type="button">ดู B ใน 3D</button></div>
+</div>
+<div class="page" id="p4">
+<h2>ตรวจสอบความเข้าใจ</h2>
+<p class="lead">ตอบคำถาม 5 ข้อ พร้อมคำอธิบายเฉลยทันที</p>
+<div class="bar"><span id="qb"></span></div>
+<div id="qs"></div>
+<div class="score" id="sc">คะแนนจะปรากฏที่นี่</div>
+<div class="row"><button class="btn ghost" id="qr" type="button">ลองใหม่</button></div>
+</div>
+</div>
+</aside>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const RAW=[
+[1,"H","ไฮโดรเจน","Hydrogen","อโลหะ","แก๊ส",1,1,"เป็นธาตุที่มีเลขอะตอมน้อยที่สุด และเบาที่สุด","nonmetal",1],
+[2,"He","ฮีเลียม","Helium","แก๊สมีตระกูล","แก๊ส",18,1,"ใช้บรรจุลูกโป่งเฉพาะทาง","noble",4],
+[3,"Li","ลิเทียม","Lithium","โลหะ","ของแข็ง",1,2,"ใช้ในแบตเตอรี่ชนิดลิเทียมไอออน","metal",7],
+[4,"Be","เบริลเลียม","Beryllium","โลหะ","ของแข็ง",2,2,"เป็นโลหะน้ำหนักเบา แต่ฝุ่นเป็นอันตราย","metal",9],
+[5,"B","โบรอน","Boron","กึ่งโลหะ","ของแข็ง",13,2,"ใช้ในวัสดุทนความร้อนบางชนิด","metalloid",11],
+[6,"C","คาร์บอน","Carbon","อโลหะ","ของแข็ง",14,2,"เป็นองค์ประกอบสำคัญของสารอินทรีย์","nonmetal",12],
+[7,"N","ไนโตรเจน","Nitrogen","อโลหะ","แก๊ส",15,2,"เป็นองค์ประกอบส่วนใหญ่ของอากาศ","nonmetal",14],
+[8,"O","ออกซิเจน","Oxygen","อโลหะ","แก๊ส",16,2,"สำคัญต่อการหายใจของสิ่งมีชีวิต","nonmetal",16],
+[9,"F","ฟลูออรีน","Fluorine","อโลหะ","แก๊ส",17,2,"สารประกอบฟลูออไรด์บางชนิดใช้ดูแลฟัน","nonmetal",19],
+[10,"Ne","นีออน","Neon","แก๊สมีตระกูล","แก๊ส",18,2,"ใช้ในหลอดไฟนีออนบางประเภท","noble",20],
+[11,"Na","โซเดียม","Sodium","โลหะ","ของแข็ง",1,3,"ทำปฏิกิริยากับน้ำได้รุนแรง ไม่ควรทดลองเอง","metal",23],
+[12,"Mg","แมกนีเซียม","Magnesium","โลหะ","ของแข็ง",2,3,"เป็นโลหะน้ำหนักเบา ใช้ในโลหะผสม","metal",24],
+[13,"Al","อะลูมิเนียม","Aluminium","โลหะ","ของแข็ง",13,3,"ใช้ทำกระป๋องและโครงสร้างน้ำหนักเบา","metal",27],
+[14,"Si","ซิลิกอน","Silicon","กึ่งโลหะ","ของแข็ง",14,3,"ใช้ผลิตอุปกรณ์อิเล็กทรอนิกส์และเซลล์แสงอาทิตย์","metalloid",28],
+[15,"P","ฟอสฟอรัส","Phosphorus","อโลหะ","ของแข็ง",15,3,"เป็นธาตุสำคัญในสิ่งมีชีวิตและปุ๋ยบางชนิด","nonmetal",31],
+[16,"S","กำมะถัน","Sulfur","อโลหะ","ของแข็ง",16,3,"ใช้เป็นวัตถุดิบในอุตสาหกรรมหลายชนิด","nonmetal",32],
+[17,"Cl","คลอรีน","Chlorine","อโลหะ","แก๊ส",17,3,"สารประกอบคลอรีนใช้ฆ่าเชื้อในน้ำอย่างควบคุม","nonmetal",35],
+[18,"Ar","อาร์กอน","Argon","แก๊สมีตระกูล","แก๊ส",18,3,"ใช้เป็นแก๊สเฉื่อยในงานเชื่อมบางประเภท","noble",40],
+[19,"K","โพแทสเซียม","Potassium","โลหะ","ของแข็ง",1,4,"เป็นธาตุอาหารที่จำเป็นต่อสิ่งมีชีวิต","metal",39],
+[20,"Ca","แคลเซียม","Calcium","โลหะ","ของแข็ง",2,4,"เป็นองค์ประกอบสำคัญของกระดูกและฟัน","metal",40]
+];
+const EL=RAW.map(r=>({n:r[0],s:r[1],th:r[2],en:r[3],type:r[4],state:r[5],group:r[6],period:r[7],use:r[8],cls:r[9],mass:r[10]}));
+const COL={metal:"#4f8cff",nonmetal:"#16b9a3",noble:"#f5a524",metalloid:"#e861b0"};
+const POS={1:[1,1],2:[1,18],3:[2,1],4:[2,2],5:[2,13],6:[2,14],7:[2,15],8:[2,16],9:[2,17],10:[2,18],11:[3,1],12:[3,2],13:[3,13],14:[3,14],15:[3,15],16:[3,16],17:[3,17],18:[3,18],19:[4,1],20:[4,2]};
+const $=id=>document.getElementById(id);
+const byN=n=>EL[Math.max(1,Math.min(20,Number(n)))-1];
+const shellsOf=n=>{const o=[];let r=n;[2,8,8,2].forEach(c=>{const k=Math.min(r,c);if(k>0)o.push(k);r-=k});return o};
+
+const stage=$("stage"),canvas=$("gl");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.NoToneMapping;
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0xffffff,.012);
+const camera=new THREE.PerspectiveCamera(45,1,.1,200);
+const HOME=new THREE.Vector3(0,3.2,12.5);
+camera.position.copy(HOME);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.07;
+controls.enablePan=true;
+controls.minDistance=4;
+controls.maxDistance=26;
+controls.autoRotate=true;
+controls.autoRotateSpeed=.9;
+controls.target.set(0,0,0);
+
+scene.add(new THREE.HemisphereLight(0xffffff,0xcfe0ff,.85));
+const sun=new THREE.DirectionalLight(0xffffff,.85);
+sun.position.set(7,12,8);
+sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-9;sun.shadow.camera.right=9;sun.shadow.camera.top=9;sun.shadow.camera.bottom=-9;
+sun.shadow.camera.near=1;sun.shadow.camera.far=40;
+sun.shadow.bias=-.0006;
+scene.add(sun);
+const rim=new THREE.DirectionalLight(0xffc2d4,.45);
+rim.position.set(-8,3,-6);
+scene.add(rim);
+const core=new THREE.PointLight(0x16b9a3,1.4,12,1.6);
+scene.add(core);
+
+const disc=new THREE.Mesh(new THREE.CircleGeometry(8.5,72),new THREE.MeshStandardMaterial({color:0xeaf4ff,roughness:.95}));
+disc.rotation.x=-Math.PI/2;disc.position.y=-5.2;disc.receiveShadow=true;
+scene.add(disc);
+const edge=new THREE.Mesh(new THREE.TorusGeometry(8.5,.14,12,96),new THREE.MeshStandardMaterial({color:0xff8fab,roughness:.5}));
+edge.rotation.x=Math.PI/2;edge.position.y=-5.2;
+scene.add(edge);
+const BN=70,bp=new Float32Array(BN*3),bs=[];
+for(let i=0;i<BN;i++){bp[i*3]=(Math.random()-.5)*28;bp[i*3+1]=-5+Math.random()*16;bp[i*3+2]=(Math.random()-.5)*20-4;bs.push(.3+Math.random()*.6)}
+const bGeo=new THREE.BufferGeometry();
+bGeo.setAttribute("position",new THREE.BufferAttribute(bp,3));
+const bubTex=(()=>{const cv=document.createElement("canvas");cv.width=cv.height=64;const g=cv.getContext("2d");g.fillStyle="rgba(190,225,255,.28)";g.beginPath();g.arc(32,32,26,0,6.283);g.fill();g.strokeStyle="rgba(90,169,255,.9)";g.lineWidth=3.5;g.stroke();g.strokeStyle="rgba(255,255,255,.95)";g.lineWidth=4;g.beginPath();g.arc(32,32,17,3.5,4.6);g.stroke();return new THREE.CanvasTexture(cv)})();
+const bubbles=new THREE.Points(bGeo,new THREE.PointsMaterial({map:bubTex,size:.8,transparent:true,depthWrite:false,sizeAttenuation:true}));
+scene.add(bubbles);
+
+const glowTex=(()=>{const c=document.createElement("canvas");c.width=c.height=128;const g=c.getContext("2d"),r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,"rgba(255,255,255,1)");r.addColorStop(.25,"rgba(255,255,255,.45)");r.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=r;g.fillRect(0,0,128,128);return new THREE.CanvasTexture(c)})();
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0x3be0c4,transparent:true,depthWrite:false,opacity:.5}));
+glow.scale.set(3.4,3.4,1);
+scene.add(glow);
+
+const world=new THREE.Group();
+scene.add(world);
+const pGeo=new THREE.SphereGeometry(.2,24,24),eGeo=new THREE.SphereGeometry(.13,24,24);
+pGeo.userData.keep=eGeo.userData.keep=true;
+const pMat=new THREE.MeshStandardMaterial({color:0xff6b81,roughness:.35,metalness:.05,emissive:0xff3b5c,emissiveIntensity:.12});
+const nMat=new THREE.MeshStandardMaterial({color:0xa9b8d6,roughness:.45,metalness:.05,emissive:0x5a6fa0,emissiveIntensity:.1});
+const eMat=new THREE.MeshStandardMaterial({color:0x3aa8ff,roughness:.25,metalness:.1,emissive:0x1a7fe0,emissiveIntensity:.35});
+const RR=[2,3.1,4.2,5.3];
+let nucleus=null,rings=[],cur=EL[0],grow=1;
+
+function clearWorld(){
+world.traverse(o=>{if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose()});
+while(world.children.length)world.remove(world.children[0]);
+rings=[];
+}
+
+function build(e){
+clearWorld();
+cur=e;
+const col=new THREE.Color(COL[e.cls]);
+glow.material.color.copy(col);
+core.color.copy(col);
+document.documentElement.style.setProperty("--cat",COL[e.cls]);
+const nu=e.mass-e.n,total=e.n+nu;
+nucleus=new THREE.Group();
+const R=total>1?.19*Math.cbrt(total)*1.05:0;
+for(let i=0;i<total;i++){
+const y=total>1?1-(i/(total-1))*2:0,rad=Math.sqrt(Math.max(0,1-y*y)),th=i*2.399963;
+const isP=Math.floor((i+1)*e.n/total)>Math.floor(i*e.n/total);
+const m=new THREE.Mesh(pGeo,isP?pMat:nMat);
+m.position.set(R*Math.cos(th)*rad,R*y,R*Math.sin(th)*rad);
+m.castShadow=true;
+nucleus.add(m);
+}
+world.add(nucleus);
+glow.scale.setScalar(2.4+R*1.6);
+const sh=shellsOf(e.n);
+sh.forEach((cnt,i)=>{
+const g=new THREE.Group();
+g.rotation.x=[.35,-.5,.7,-.25][i];
+g.rotation.z=[.2,.9,-.6,1.3][i];
+const ring=new THREE.Mesh(new THREE.TorusGeometry(RR[i],.03,10,160),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.8}));
+ring.rotation.x=Math.PI/2;
+g.add(ring);
+const els=[];
+for(let k=0;k<cnt;k++){
+const m=new THREE.Mesh(eGeo,eMat);
+m.castShadow=true;
+g.add(m);
+els.push({m,a:k/cnt*Math.PI*2});
+}
+world.add(g);
+rings.push({g,els,R:RR[i],sp:.95/Math.pow(i+1,.55)});
+});
+grow=.02;
+refreshHotspots();
+}
+
+const HS=[
+{id:"h1",label:"นิวเคลียส",pos:()=>new THREE.Vector3(0,0,0),text:e=>`นิวเคลียสประกอบด้วยโปรตอน ${e.n} ตัว (ประจุบวก) และนิวตรอน ${e.mass-e.n} ตัว (ไม่มีประจุ) เลขอะตอม = จำนวนโปรตอน = ${e.n} จึงเป็นตัวกำหนดว่าเป็นธาตุ${e.th}`},
+{id:"h2",label:"ชั้นพลังงานในสุด",pos:()=>rings[0]?elPos(rings[0]):null,text:e=>{const s=shellsOf(e.n);return `ชั้นพลังงานแรกจุอิเล็กตรอนได้สูงสุด 2 ตัว ธาตุนี้มี ${s[0]} ตัว ${s[0]===2?"ซึ่งเต็มพอดี":"ซึ่งยังไม่เต็ม"} จำนวนชั้นพลังงานทั้งหมดคือ ${s.length} ชั้น ตรงกับคาบที่ ${e.period}`}},
+{id:"h3",label:"เวเลนซ์อิเล็กตรอน",pos:()=>rings.length?elPos(rings[rings.length-1]):null,text:e=>{const s=shellsOf(e.n),v=s[s.length-1];return `อิเล็กตรอนวงนอกสุดมี ${v} ตัว เรียกว่าเวเลนซ์อิเล็กตรอน ซึ่งเกี่ยวข้องกับการเกิดปฏิกิริยาเคมี ธาตุนี้อยู่หมู่ ${e.group}${e.type==="แก๊สมีตระกูล"?" เป็นแก๊สมีตระกูลที่เสถียรและทำปฏิกิริยาได้ยาก":""}`}}
+];
+const hsBox=$("hs");
+HS.forEach((h,i)=>{
+const b=document.createElement("button");
+b.type="button";b.className="hs";b.id=h.id;
+b.innerHTML=`<span class="pin">${i+1}</span><span class="tag">${h.label}</span>`;
+b.addEventListener("click",()=>openCard(h,b));
+hsBox.appendChild(b);h.el=b;
+});
+function elPos(r){const v=new THREE.Vector3();r.els[0].m.getWorldPosition(v);return v}
+function openCard(h,b){
+HS.forEach(x=>x.el.classList.remove("open"));
+b.classList.add("open");
+$("hct").textContent=h.label;
+$("hcp").textContent=h.text(cur);
+$("hcard").classList.add("show");
+}
+function closeCard(){$("hcard").classList.remove("show");HS.forEach(x=>x.el.classList.remove("open"))}
+$("hx").addEventListener("click",closeCard);
+function refreshHotspots(){
+HS[1].el.style.display=rings.length>1?"flex":"none";
+if(!rings.length)return;
+if(rings.length===1)HS[2].label="เวเลนซ์อิเล็กตรอน (ชั้นเดียว)";else HS[2].label="เวเลนซ์อิเล็กตรอน";
+HS[2].el.querySelector(".tag").textContent=HS[2].label;
+if($("hcard").classList.contains("show")){const o=HS.find(x=>x.el.classList.contains("open"));if(o&&o.el.style.display!=="none")$("hcp").textContent=o.text(cur);else closeCard()}
+}
+const tmp=new THREE.Vector3();
+function placeHotspots(){
+const w=stage.clientWidth,h=stage.clientHeight;
+HS.forEach(hs=>{
+const p=hs.pos();
+if(!p||hs.el.style.display==="none")return;
+tmp.copy(p).project(camera);
+const vis=tmp.z<1;
+hs.el.style.opacity=vis?1:0;
+hs.el.style.pointerEvents=vis?"auto":"none";
+hs.el.style.transform=`translate(${(tmp.x*.5+.5)*w-13}px,${(-tmp.y*.5+.5)*h-13}px)`;
+});
+}
+
+const clock=new THREE.Clock();
+function loop(){
+requestAnimationFrame(loop);
+const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+grow+=(1-grow)*Math.min(1,dt*5);
+world.scale.setScalar(grow);
+if(nucleus){nucleus.rotation.y+=dt*.35;nucleus.rotation.x+=dt*.12}
+rings.forEach(r=>{r.els.forEach(o=>{o.a+=dt*r.sp;o.m.position.set(Math.cos(o.a)*r.R,0,Math.sin(o.a)*r.R)})});
+glow.material.opacity=.42+Math.sin(t*2)*.1;
+for(let i=0;i<BN;i++){bp[i*3+1]+=dt*bs[i];bp[i*3]+=Math.sin(t+i)*dt*.2;if(bp[i*3+1]>11)bp[i*3+1]=-5}
+bGeo.attributes.position.needsUpdate=true;
+controls.update();
+placeHotspots();
+renderer.render(scene,camera);
+}
+function resize(){
+const w=stage.clientWidth,h=stage.clientHeight;
+renderer.setSize(w,h,false);
+camera.aspect=w/h;
+camera.position.z=camera.position.z;
+camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+
+$("autoBtn").addEventListener("click",e=>{controls.autoRotate=!controls.autoRotate;e.currentTarget.classList.toggle("on",controls.autoRotate)});
+$("resetBtn").addEventListener("click",()=>{camera.position.copy(HOME);controls.target.set(0,0,0);controls.update()});
+
+let riddle=false,revealed=false;
+function show(e,fromUI){
+build(e);
+closeCard();
+const hide=riddle&&!revealed;
+$("tNo").textContent="เลขอะตอม "+e.n;
+$("tSym").textContent=hide?"?":e.s;
+$("tNm").textContent=hide?"ธาตุปริศนา":e.th;
+$("tEn").textContent=hide?"???":e.en;
+const tile=$("tile");tile.classList.remove("pop");void tile.offsetWidth;tile.classList.add("pop");
+$("chips").innerHTML=`<span class="chip">ประเภท <b>${e.type}</b></span><span class="chip">สถานะ <b>${e.state}</b></span><span class="chip">หมู่ <b>${e.group}</b></span><span class="chip">คาบ <b>${e.period}</b></span><span class="chip">อิเล็กตรอน <b>${shellsOf(e.n).join(" , ")}</b></span>`;
+$("use").textContent=hide?"คำใบ้: ธาตุนี้มีโปรตอน "+e.n+" ตัว จัดเป็น"+e.type+" สถานะ"+e.state:e.use;
+$("bSym").textContent=hide?"?":e.s;
+$("bName").textContent=hide?"ธาตุปริศนา":e.th;
+$("bSub").textContent=`โปรตอน ${e.n} · นิวตรอน ${e.mass-e.n} · อิเล็กตรอน ${e.n}`;
+$("sl").value=e.n;$("slo").textContent=e.n;
+document.querySelectorAll(".pc").forEach(c=>c.classList.toggle("sel",Number(c.dataset.n)===e.n));
+const det=hide?"ธาตุปริศนา · เลขอะตอม "+e.n:`${e.th} (${e.en}) · เลขอะตอม ${e.n} · ${e.type} · ${e.state} · หมู่ ${e.group} คาบ ${e.period}`;
+$("ptd").textContent=det;
+if(riddle)$("rtxt").textContent=hide?`คำใบ้: ธาตุเลขอะตอม ${e.n} จัดเป็น${e.type} สถานะ${e.state} อยู่ในหมู่ ${e.group} คาบ ${e.period}`:`เฉลย: ${e.th} (${e.en}) สัญลักษณ์ ${e.s}`;
+}
+
+function search(){
+const q=$("q").value.trim().toLowerCase();
+if(!q){$("sm").textContent="กรุณาพิมพ์ชื่อหรือสัญลักษณ์ธาตุก่อน";return}
+const e=EL.find(x=>[x.th,x.en,x.s,String(x.n)].some(v=>v.toLowerCase()===q))||EL.find(x=>x.th.includes(q)||x.en.toLowerCase().includes(q));
+if(e){revealed=true;show(e);$("sm").textContent=`พบธาตุ ${e.th} (${e.s})`}
+else $("sm").textContent="ยังไม่พบธาตุนี้ ลองชื่อไทย ชื่ออังกฤษ หรือสัญลักษณ์ของธาตุ 1–20"
+}
+$("go").addEventListener("click",search);
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
+$("sl").addEventListener("input",()=>show(byN($("sl").value)));
+$("prev").addEventListener("click",()=>show(byN(cur.n-1)));
+$("next").addEventListener("click",()=>show(byN(cur.n+1)));
+$("rid").addEventListener("click",()=>{
+riddle=!riddle;revealed=false;
+$("rid").textContent=riddle?"ปิดโหมดปริศนา":"เปิดโหมดปริศนา";
+$("rev").hidden=!riddle;$("rtxt").hidden=!riddle;
+show(cur);
+});
+$("rev").addEventListener("click",()=>{revealed=true;show(cur)});
+$("sl").addEventListener("change",()=>{if(riddle)revealed=false;if(riddle)show(cur)});
+
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));
+document.querySelectorAll(".page").forEach(p=>p.classList.toggle("on",p.id===b.dataset.tab));
+}));
+
+const pt=$("pt");
+EL.forEach(e=>{
+const b=document.createElement("button");
+b.type="button";b.className="pc "+e.cls;b.dataset.n=e.n;
+b.style.gridColumn=POS[e.n][1];b.style.gridRow=POS[e.n][0];b.style.setProperty("--cc",COL[e.cls]);
+b.innerHTML=`<span>${e.n}</span><b>${e.s}</b>`;
+b.title=`${e.th} (${e.en})`;
+b.setAttribute("aria-label",`${e.th} เลขอะตอม ${e.n}`);
+b.addEventListener("click",()=>{if(riddle)revealed=false;show(e)});
+pt.appendChild(b);
+});
+pt.style.gridTemplateRows="repeat(4,auto)";
+
+["ca","cb"].forEach(id=>EL.forEach(e=>{const o=document.createElement("option");o.value=e.n;o.textContent=`${e.th} (${e.s})`;$(id).appendChild(o)}));
+$("ca").value=8;$("cb").value=11;
+function compare(){
+const a=byN($("ca").value),b=byN($("cb").value);
+$("ha").textContent=`${a.th} (${a.s})`;$("hb").textContent=`${b.th} (${b.s})`;
+const rows=[["เลขอะตอม",a.n,b.n],["ประเภท",a.type,b.type],["สถานะ",a.state,b.state],["หมู่ / คาบ",`${a.group} / ${a.period}`,`${b.group} / ${b.period}`],["นิวตรอน",a.mass-a.n,b.mass-b.n],["อิเล็กตรอนแต่ละชั้น",shellsOf(a.n).join(","),shellsOf(b.n).join(",")]];
+$("cr").innerHTML=rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("");
+$("cc").textContent=a.n===b.n?"เลือกธาตุเดียวกัน ลองเลือกธาตุที่ต่างกันเพื่อเปรียบเทียบ":a.type===b.type?`ทั้งสองธาตุจัดเป็น${a.type} แต่มีเลขอะตอม ${a.n} และ ${b.n} ต่างกัน`:`${a.th} เป็น${a.type} ส่วน${b.th} เป็น${b.type} จึงมีการจัดประเภทต่างกัน`;
+}
+$("ca").addEventListener("change",compare);$("cb").addEventListener("change",compare);
+$("sa").addEventListener("click",()=>{revealed=true;show(byN($("ca").value))});
+$("sb").addEventListener("click",()=>{revealed=true;show(byN($("cb").value))});
+compare();
+
+const QZ=[
+{q:"เลขอะตอมบอกข้อมูลใดของธาตุ?",o:["จำนวนโปรตอน","จำนวนนิวตรอนเท่านั้น","จำนวนชั้นพลังงานเสมอ"],a:0,x:"จำนวนโปรตอนในนิวเคลียสเป็นตัวกำหนดเลขอะตอมและชนิดของธาตุ"},
+{q:"ธาตุใดเป็นแก๊สมีตระกูล?",o:["โซเดียม (Na)","นีออน (Ne)","คาร์บอน (C)"],a:1,x:"นีออน (Ne) เป็นแก๊สมีตระกูล มีปฏิกิริยาเคมีต่ำในสภาวะทั่วไป"},
+{q:"เมื่ออะตอมเป็นกลางทางไฟฟ้า ข้อใดถูกต้อง?",o:["โปรตอนมากกว่าอิเล็กตรอนเสมอ","อิเล็กตรอนเท่ากับนิวตรอนเสมอ","โปรตอนเท่ากับอิเล็กตรอน"],a:2,x:"อะตอมเป็นกลางมีประจุบวกจากโปรตอนเท่ากับประจุลบจากอิเล็กตรอน"},
+{q:"ธาตุที่มีเลขอะตอม 11 คือธาตุใด?",o:["แมกนีเซียม (Mg)","ฟลูออรีน (F)","โซเดียม (Na)"],a:2,x:"เลขอะตอม 11 หมายถึงมีโปรตอน 11 ตัว ซึ่งคือโซเดียม (Na) ลองสร้างโมเดลดูในฉาก 3 มิติได้"},
+{q:"ธาตุที่อยู่คาบเดียวกันมีสิ่งใดเหมือนกัน?",o:["จำนวนชั้นพลังงาน","จำนวนโปรตอน","จำนวนเวเลนซ์อิเล็กตรอน"],a:0,x:"ธาตุในคาบเดียวกันมีจำนวนชั้นพลังงานเท่ากัน ส่วนจำนวนเวเลนซ์อิเล็กตรอนจะเท่ากันในหมู่เดียวกัน"}
+];
+let done=0,score=0;
+function renderQuiz(){
+done=0;score=0;
+$("qb").style.width="0%";
+$("sc").textContent="คะแนนจะปรากฏที่นี่";
+$("qs").innerHTML="";
+QZ.forEach((z,i)=>{
+const d=document.createElement("div");
+d.className="q";
+d.innerHTML=`<strong>ข้อ ${i+1}. ${z.q}</strong><div class="opts"></div><div class="fb"></div>`;
+const box=d.querySelector(".opts"),fb=d.querySelector(".fb");
+z.o.forEach((t,k)=>{
+const b=document.createElement("button");
+b.type="button";b.className="opt";b.textContent=t;
+b.addEventListener("click",()=>{
+box.querySelectorAll(".opt").forEach((x,j)=>{x.disabled=true;if(j===z.a)x.classList.add("ok")});
+const right=k===z.a;
+if(!right)b.classList.add("no");
+else score++;
+fb.textContent=(right?"ถูกต้อง · ":"ยังไม่ถูก · ")+z.x;
+fb.style.color=right?"#6ee7b7":"#fdba74";
+done++;
+$("qb").style.width=(done/QZ.length*100)+"%";
+if(done===QZ.length)$("sc").textContent=`คะแนนของคุณ ${score}/${QZ.length} ข้อ ${score===QZ.length?"ยอดเยี่ยมมาก!":score>=QZ.length-2?"ทำได้ดี ลองทบทวนอีกนิด":"ทบทวนคำอธิบายแล้วลองอีกครั้ง"}`;
+});
+box.appendChild(b);
+});
+$("qs").appendChild(d);
+});
+}
+$("qr").addEventListener("click",renderQuiz);
+renderQuiz();
+
+show(EL[7]);
+loop();
+</script>
+</body>
+</html>
